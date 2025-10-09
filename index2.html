@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood Data Viewer - Surabaya</title>
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-selector {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-cards {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #2a5298;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2a5298;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .table-container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .dt-buttons {
+            margin-bottom: 15px;
+        }
+
+        .btn-file {
+            margin: 5px;
+        }
+
+        /* Default DataTable styling with text wrapping */
+        #dataTable {
+            width: 100% !important;
+        }
+
+        #dataTable td {
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: normal !important;
+            max-width: 200px;
+        }
+
+        #dataTable th {
+            white-space: normal !important;
+        }
+
+        /* URL links styling */
+        .url-link {
+            color: #1976d2;
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .url-link:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+
+        .file-info {
+            background-color: #e3f2fd;
+            border: 1px solid #2196f3;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2a5298;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header" style="position: relative;">
+            <h1 class="mb-0">🌊 Flood Data Viewer - Surabaya</h1>
+            <p class="mb-0 mt-2">Visualisasi Data Banjir Hasil Ekstraksi LLM</p>
+
+            <!-- Navigation Button to Map -->
+            <div style="position: absolute; top: 30px; right: 30px;">
+                <a href="index.html" style="text-decoration: none;">
+                    <button style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+                                  color: white;
+                                  border: none;
+                                  padding: 12px 24px;
+                                  font-size: 14px;
+                                  font-weight: bold;
+                                  border-radius: 8px;
+                                  cursor: pointer;
+                                  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                                  transition: all 0.3s ease;
+                                  display: flex;
+                                  align-items: center;
+                                  gap: 8px;"
+                           onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0, 0, 0, 0.3)';"
+                           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0, 0, 0, 0.2)';">
+                        <span style="font-size: 16px;">🗺️</span>
+                        <span>Map Visualisasi</span>
+                    </button>
+                </a>
+            </div>
+        </div>
+
+        <!-- Data Info -->
+        <div class="file-selector">
+            <div id="fileInfo" class="file-info">
+                <h6>📊 Data Source:</h6>
+                <div id="fileDetails">Loading data from <strong>data.json</strong>...</div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-cards">
+            <div class="stat-card">
+                <div class="stat-number" id="totalEntries">0</div>
+                <div class="stat-label">Total Entries</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="uniqueStreets">0</div>
+                <div class="stat-label">Unique Streets</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="dateRange">-</div>
+                <div class="stat-label">Date Range</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="filesLoaded">📄</div>
+                <div class="stat-label">Data Source: data.json</div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-container">
+            <h5 class="mb-3">📋 Extracted Street Data</h5>
+
+            <div id="loadingMsg" class="loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading data from data.json...</p>
+            </div>
+
+            <div id="errorMsg" class="error-message" style="display: none;"></div>
+
+            <table id="dataTable" class="display" style="display: none; width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Street/Location</th>
+                        <th>Summary</th>
+                        <th>Source URL</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
+    <script>
+        let dataTable;
+        let loadedData = [];
+
+        $(document).ready(function () {
+            // Auto-load data.json on page load
+            loadDataFromFile();
+        });
+
+        function loadDataFromFile() {
+            showLoading('Loading data from data.json...');
+
+            // Fetch data.json from the same directory
+            fetch('data.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load data.json');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    processLoadedData(data);
+                })
+                .catch(error => {
+                    console.error('Error loading data.json:', error);
+                    showError('Error loading data.json: ' + error.message + '. Please make sure data.json exists in the same folder.');
+                });
+        }
+
+        function processLoadedData(data) {
+            loadedData = [];
+
+            let extractedData = [];
+
+            // Handle different JSON structures
+            if (data.extracted_data && Array.isArray(data.extracted_data)) {
+                extractedData = data.extracted_data;
+            } else if (Array.isArray(data)) {
+                extractedData = data;
+            } else {
+                console.warn('Unknown data structure in data.json');
+                showError('Unknown data structure in data.json');
+                return;
+            }
+
+            loadedData = extractedData;
+
+            // Update file info
+            updateFileInfo({
+                filename: 'data.json',
+                entries: extractedData.length,
+                metadata: data.metadata || null
+            });
+
+            updateStatistics();
+            initializeDataTable();
+            hideLoading();
+        }
+
+        function updateFileInfo(fileInfo) {
+            const fileDetailsDiv = $('#fileDetails');
+
+            let infoHtml = `
+                <div class="mb-2">
+                    <strong>${fileInfo.filename}</strong>: ${fileInfo.entries} entries
+                    ${fileInfo.metadata ? `<br>(Processed: ${new Date(fileInfo.metadata.processed_at).toLocaleString()})` : ''}
+                </div>
+            `;
+
+            fileDetailsDiv.html(infoHtml);
+        }
+
+        function updateStatistics() {
+            const totalEntries = loadedData.length;
+            const uniqueStreets = [...new Set(loadedData.map(item => item.jalan))].length;
+
+            // Calculate date range
+            const dates = loadedData
+                .map(item => item.date)
+                .filter(date => date && date !== '-')
+                .sort();
+
+            const dateRange = dates.length > 0
+                ? (dates[0] === dates[dates.length - 1]
+                    ? dates[0]
+                    : `${dates[0]} - ${dates[dates.length - 1]}`)
+                : '-';
+
+            $('#totalEntries').text(totalEntries.toLocaleString());
+            $('#uniqueStreets').text(uniqueStreets.toLocaleString());
+            $('#dateRange').text(dateRange);
+        }
+
+        function initializeDataTable() {
+            if (dataTable) {
+                dataTable.destroy();
+            }
+
+            const tableData = loadedData.map(item => [
+                item.date || '-',
+                item.jalan || '',
+                item.summary_content || '',
+                item.url_source || ''
+            ]);
+
+            dataTable = $('#dataTable').DataTable({
+                data: tableData,
+                columns: [
+                    {
+                        title: 'Date',
+                        width: '10%'
+                    },
+                    {
+                        title: 'Street/Location',
+                        width: '20%'
+                    },
+                    {
+                        title: 'Summary',
+                        width: '50%'
+                    },
+                    {
+                        title: 'Source URL',
+                        width: '20%',
+                        render: function (data) {
+                            if (data) {
+                                return `<a href="${data}" target="_blank" class="url-link">${data}</a>`;
+                            }
+                            return '';
+                        }
+                    }
+                ],
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                dom: 'Bfrtip',
+                buttons: [
+                    'copy',
+                    'csv',
+                    'excel',
+                    {
+                        extend: 'pdfHtml5',
+                        title: 'Flood Data Surabaya'
+                    }
+                ],
+                order: [[0, 'desc']],
+                columnDefs: [
+                    {
+                        targets: '_all',
+                        className: 'dt-body-wrap'
+                    }
+                ],
+                language: {
+                    search: "Search:",
+                    lengthMenu: "Show _MENU_ entries per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries"
+                }
+            });
+
+            $('#dataTable').show();
+        }
+
+
+        function showLoading(message = 'Loading...') {
+            $('#loadingMsg p').text(message);
+            $('#loadingMsg').show();
+            $('#errorMsg').hide();
+            $('#dataTable').hide();
+        }
+
+        function hideLoading() {
+            $('#loadingMsg').hide();
+        }
+
+        function showError(message) {
+            $('#errorMsg').text(message).show();
+            $('#loadingMsg').hide();
+        }
+    </script>
+</body>
+
+</html>
